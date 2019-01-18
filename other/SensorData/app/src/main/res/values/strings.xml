@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">SensorData</string>
+    <string name="sensor_data">get data</string>
+    <string name="sensor1">data:</string>
+    <string name="sensor2">data:</string>
+    <string name="sensor3">data:</string>
+</resources>

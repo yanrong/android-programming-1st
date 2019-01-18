@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MySensor</string>
+    <string name="not_found">N/A</string>
+    <string name="detect_button">detect</string>
+    <string name="detect_other_button">other sensor</string>
+    <string name="sensor_details">sensor_details</string>
+</resources>
