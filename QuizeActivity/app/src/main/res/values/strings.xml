@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">QuizeActivity</string>
+    <string name="question_init">clicked</string>
+    <string name="button_true">True</string>
+    <string name="button_false">False</string>
+    <string name="correct_text">Correct!</string>
+    <string name="incorrect_text">Incorrect!</string>
+    <string name="button_next">Next</string>
+    <string name="question_prc">Beijing is capital of China</string>
+    <string name="question_usa">NewYork is capital of USA</string>
+    <string name="question_russia">Moscow is capital of Russia</string>
+    <string name="question_uk">London is capital of UK</string>
+    <string name="question_japan">Kyoto is capital of Japan</string>
+</resources>
