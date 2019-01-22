@@ -11,4 +11,10 @@
     <string name="question_russia">Moscow is capital of Russia</string>
     <string name="question_uk">London is capital of UK</string>
     <string name="question_japan">Kyoto is capital of Japan</string>
+
+    <string name="warning_text">Are you sure you want to do this?</string>
+    <string name="show_answer_button">Show Answer</string>
+    <string name="cheat_button">Cheat!</string>
+    <string name="judgment_toast">Cheating is wrong.</string>
+    <string name="quit_answer_button">Quit!</string>
 </resources>
