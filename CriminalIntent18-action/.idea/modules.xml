@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/CriminalIntent18-action.iml" filepath="$PROJECT_DIR$/CriminalIntent18-action.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file:///mnt/sdb6/AndroidStudioProjects/CriminalIntent18-action/CriminalIntent18-action.iml" filepath="/mnt/sdb6/AndroidStudioProjects/CriminalIntent18-action/CriminalIntent18-action.iml" />
+      <module fileurl="file:///mnt/sdb6/AndroidStudioProjects/CriminalIntent18-action/app/app.iml" filepath="/mnt/sdb6/AndroidStudioProjects/CriminalIntent18-action/app/app.iml" />
     </modules>
   </component>
 </project>
