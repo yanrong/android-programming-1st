@@ -121,10 +121,6 @@ public class MainActivity extends AppCompatActivity {
                         Bitmap bitmap = BitmapFactory.decodeStream(getContentResolver().
                                 openInputStream(imageUri));
                         picture.setImageBitmap(bitmap);
-
-                        File tempFile = new File(Environment.getExternalStorageDirectory(), "hello.jpg");
-                        cropPicture(imageUri.fromFile(tempFile));
-                        String fn = FileSave.doSaveFile(this,"hello.img", bitmap);
                     } catch(FileNotFoundException e ) {
                         e.printStackTrace();
                     }
@@ -234,16 +230,8 @@ public class MainActivity extends AppCompatActivity {
     private void  openCamera() throws IOException{
         Intent intent = new Intent();
         intent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
-
-        File outputImage = new File(Environment.getExternalStorageDirectory(),"hello.jpg");
-        try {
-            if (outputImage.exists()) {
-                outputImage.delete();
-            }
-            outputImage.createNewFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        //default storage format is jpg
+        File outputImage = FileSave.doSaveFile(this, "Crime");
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             imageUri = FileProvider.getUriForFile(MainActivity.this,
                     "com.dyr.mycamera.fileprovider" ,outputImage );
@@ -254,24 +242,5 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
         intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, TAKE_PHOTO);
         startActivityForResult(intent, TAKE_PHOTO);
-    }
-
-    private void cropPicture(Uri data) {
-        if (data == null) {
-            return;
-        }
-        Intent cropIntent = new Intent("com.android.camera.action.CROP");
-        cropIntent.setDataAndType(data, "image/*");
-
-        cropIntent.putExtra("crop", "true");
-        cropIntent.putExtra("aspectX", 1);
-        cropIntent.putExtra("aspectY", 1);
-        cropIntent.putExtra("outputX", 320);
-        cropIntent.putExtra("outputY", 320);
-        cropIntent.putExtra("scale", true);
-
-        cropIntent.putExtra("return-data", true);
-
-        startActivityForResult(cropIntent, CROP_RESULT_CODE);
     }
 }
