@@ -19,19 +19,20 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MainActivity";
+    public static final String location = Environment.getExternalStorageDirectory()+"/Crime";
+    public static final String thumbnail = location+"/thumbnail";
 
     public static final int TAKE_PHOTO = 1;
     public static final int CHOOSE_PHOTO = 2;
@@ -48,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         Button takePhoto = (Button) findViewById(R.id.take_photo);
         Button chooseAlbum = (Button) findViewById(R.id.choose_from_album);
         picture =(ImageView) findViewById(R.id.picture);
+        String path;
 
         takePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -94,6 +96,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        path = FileSave.getFile(thumbnail,"Crime_thumbnail");
+        if(path != null){
+            displayImage(path);
+        }
     }
 
     @Override
@@ -117,23 +124,18 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case TAKE_PHOTO:
                 if(resultCode == RESULT_OK) {
-                    try {
-                        Bitmap bitmap = BitmapFactory.decodeStream(getContentResolver().
-                                openInputStream(imageUri));
-                        picture.setImageBitmap(bitmap);
-                    } catch(FileNotFoundException e ) {
-                        e.printStackTrace();
-                    }
+                    getThumbnailByManual(imageUri);
                 }
                 break;
             case CHOOSE_PHOTO:
                 if (resultCode == RESULT_OK) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        handleImageOnKitkat(data);
-                    } else {
-                        handleImageBeforeKitkat(data);
-                    }
+                    getThumbnailFromAlbum(data);
                 }
+                break;
+            case CROP_RESULT_CODE:
+                  Bitmap bitmap = data.getParcelableExtra("data");
+                  FileSave.saveThumbnail(bitmap, thumbnail,"Crime_thumbnail");
+                  picture.setImageBitmap(bitmap);
                 break;
             default:
                 break;
@@ -165,34 +167,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @TargetApi(19)
-    private void handleImageOnKitkat(Intent data) {
-        String imagePath = null;
-        Uri uri = data.getData();
-        if (DocumentsContract.isDocumentUri(this, uri)) {
-
-            String docId = DocumentsContract.getDocumentId(uri);
-            if("com.android.providers.media.documents".equals(uri.getAuthority())) {
-
-                String id  = docId.split(":")[1];
-                String selection = MediaStore.Images.Media._ID+ "=" +id;
-                imagePath = getImagePath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,selection );
-            } else if ("com.android.providers.downloads.documents".equals(uri.getAuthority())) {
-                Uri contentUri = ContentUris.withAppendedId(Uri.parse
-                        ("content://downloads/public_downloads"),Long.valueOf(docId));
-                imagePath = getImagePath(contentUri, null);
-            }
-        } else if ("content".equalsIgnoreCase(uri.getScheme())) {
-
-            imagePath = getImagePath(uri, null);
-        } else if ("file".equalsIgnoreCase(uri.getScheme())) {
-
-            imagePath = uri.getPath();
-        }
-        displayImage(imagePath);
-    }
-
-    private void handleImageBeforeKitkat(Intent data) {
+    private void getThumbnailFromAlbum(Intent data) {
         Uri uri = data.getData();
         String imagePath = getImagePath(uri, null);
         displayImage(imagePath);
@@ -242,5 +217,22 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
         intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, TAKE_PHOTO);
         startActivityForResult(intent, TAKE_PHOTO);
+    }
+
+    protected void getThumbnailByManual(Uri uri) {
+        Intent intent = new Intent("com.android.camera.action.CROP");
+
+        intent.setDataAndType(uri, "image/*");
+
+        intent.putExtra("crop", "true");
+        intent.putExtra("aspectX", 1);
+        intent.putExtra("aspectY", 1);
+        intent.putExtra("outputX", 50);
+        intent.putExtra("outputY", 50);
+
+        intent.putExtra("return-data", true);
+
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivityForResult(intent, CROP_RESULT_CODE);
     }
 }
