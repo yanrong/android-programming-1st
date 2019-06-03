@@ -12,13 +12,7 @@ import java.io.IOException;
 
 public class FileOpt {
 
-    public static File doSaveFile(Context c, String fileName) {
-        String location = Environment.getExternalStorageDirectory() + "/Crime/";
-        Log.e("===========FileSave", location);
-        return saveFile(c, location, fileName);
-    }
-
-    public static File saveFile(Context c, String filePath, String fileName) {
+    public static File createEmptyFile(Context c, String filePath, String fileName) {
         /*String newFileName = "";
         File fullFile = null;
         Date date = new Date(System.currentTimeMillis());
@@ -63,7 +57,7 @@ public class FileOpt {
         }
     }
 
-    public static void saveThumbnail(Bitmap bitmap, String path, String name) {
+    public static void saveFile(Bitmap bitmap, String path, String name) {
 
         File dir = new File(path);
         if (!dir.exists()) {

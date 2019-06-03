@@ -53,6 +53,7 @@ public class CrimeFragment extends Fragment {
     private static final String TAG = "CriminalFragment";
     public static final String EXTRA_CRIME_ID = "com.dyr.app.criminalintent.crime_id";
     public static final String LOCATION = Environment.getExternalStorageDirectory() + "/Crime/";
+    public static final String THUMBNAIL = Environment.getExternalStorageDirectory() + "/Crime/thumbnail";
     private static final String DIALOG_DATE = "date";
     private static final String DIALOG_TIME = "time";
     private static final int REQUEST_DATE = 0;
@@ -182,6 +183,13 @@ public class CrimeFragment extends Fragment {
         if(!hasCamera){
             mPhotoButton.setEnabled(false);
         }
+
+        //String file = FileOpt.getFile(LOCATION,"Crime_"+ mCrime.getId().toString());
+        String file = FileOpt.getFile(THUMBNAIL,"Crime_thumbnail_" + mCrime.getId().toString());
+        if(file != null) {
+            showPhoto(file);
+        }
+
         return v;
     }
 
@@ -213,8 +221,12 @@ public class CrimeFragment extends Fragment {
         } else  if(requestCode == CROP_PHOTO){
             Bitmap bitmap = data.getParcelableExtra("data");
             String id = mCrime.getId().toString();
-            FileOpt.doSaveFile(getActivity(), "Crime_" + id );
-            mPhotoView.setImageBitmap(bitmap);
+            FileOpt.saveFile(bitmap, THUMBNAIL,"Crime_thumbnail_" + id );
+            String thumbnail = FileOpt.getFile(THUMBNAIL,"Crime_thumbnail_" + id);
+            if(thumbnail != null){
+                showPhoto(thumbnail);
+            }
+            //mPhotoView.setImageBitmap(bitmap);
         }
     }
 
@@ -260,7 +272,7 @@ public class CrimeFragment extends Fragment {
         intent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
         String s = mCrime.getId().toString();
         //default storage format is jpg
-        File outputImage = FileOpt.doSaveFile(getActivity(), "Crime" + s);
+        File outputImage = FileOpt.createEmptyFile(getActivity(), LOCATION,"Crime_" + s);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             photoUri = FileProvider.getUriForFile(getActivity(),
                     "com.dyr.app.criminalintent" ,outputImage );
@@ -282,11 +294,12 @@ public class CrimeFragment extends Fragment {
         intent.putExtra("aspectX", 1);
         intent.putExtra("aspectY", 1);
         intent.putExtra("outputX", 50);
-        intent.putExtra("outputY", 80);
+        intent.putExtra("outputY", 50);
 
         intent.putExtra("return-data", true);
-
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        }
         startActivityForResult(intent, CROP_PHOTO);
     }
 
