@@ -12,11 +12,15 @@ public class Crime {
 	private static final String JSON_TITLE = "title";
 	private static final String JSON_SOLVED ="solved";
 	private static final String JSON_DATE = "date";
+	private static final String JSON_PHOTO_ORIGIN = "crime";
+	private static final String JSON_PHOTO_CROP = "thumbnail";
 
 	private UUID mId;
 	private String mTitle;
 	private Date mDate;
 	private boolean mSolved;
+	private Photo mOriginPhoto;
+	private Photo mCropPhoto;
 
 	public Crime() {
 		// Generate unique identifier
@@ -30,6 +34,12 @@ public class Crime {
 		json.put(JSON_TITLE, mTitle);
 		json.put(JSON_SOLVED, mSolved);
 		json.put(JSON_DATE, mDate.getTime());
+		if(mOriginPhoto != null){
+			json.put(JSON_PHOTO_ORIGIN,mOriginPhoto.toJSON());
+		}
+		if(mCropPhoto != null){
+			json.put(JSON_PHOTO_CROP,mCropPhoto.toJSON());
+		}
 
 		return json;
 	}
@@ -41,8 +51,29 @@ public class Crime {
 		}
 		mSolved = json.getBoolean(JSON_SOLVED);
 		mDate = new Date(json.getLong(JSON_DATE));
+		if(json.has(JSON_PHOTO_ORIGIN)){
+			json.put(JSON_PHOTO_ORIGIN, mOriginPhoto.toJSON());
+		}
+		if(json.has(JSON_PHOTO_CROP)){
+			json.put(JSON_PHOTO_CROP, mCropPhoto.toJSON());
+		}
 	}
 
+	public Photo getOriginPhoto(){
+		return  mOriginPhoto;
+	}
+
+	public void setOriginPhoto(Photo p){
+		mOriginPhoto = p;
+	}
+
+	public Photo getCropPhoto(){
+		return  mCropPhoto;
+	}
+
+	public void setCropPhoto(Photo p){
+		mCropPhoto = p;
+	}
 	@Override
 	public String toString() {
 		return mTitle;

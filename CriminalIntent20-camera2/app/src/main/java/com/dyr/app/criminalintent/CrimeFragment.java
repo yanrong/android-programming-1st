@@ -23,6 +23,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
+import android.transition.CircularPropagation;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -52,14 +53,15 @@ public class CrimeFragment extends Fragment {
 
     private static final String TAG = "CriminalFragment";
     public static final String EXTRA_CRIME_ID = "com.dyr.app.criminalintent.crime_id";
-    public static final String LOCATION = Environment.getExternalStorageDirectory() + "/Crime/";
-    public static final String THUMBNAIL = Environment.getExternalStorageDirectory() + "/Crime/thumbnail";
+    //public static final String LOCATION = Environment.getExternalStorageDirectory() + "/Crime/";
+    //public static final String THUMBNAIL = Environment.getExternalStorageDirectory() + "/Crime/thumbnail";
     private static final String DIALOG_DATE = "date";
     private static final String DIALOG_TIME = "time";
+    private static final String DIALOG_IMAGE = "image";
     private static final int REQUEST_DATE = 0;
     private static final int REQUEST_TIME = 1;
     private static final int TAKE_PHOTO = 2;
-    public static final int CROP_PHOTO = 3;
+    private static final int CROP_PHOTO = 3;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -75,6 +77,18 @@ public class CrimeFragment extends Fragment {
         CrimeLab.get(getActivity()).saveCrimes();
     }
 
+    @Override
+    public void onStart(){
+        super.onStart();
+        showPhoto();
+    }
+
+    @Override
+    public void onStop(){
+        super.onStop();
+        PictureUtils.cleanImageView(mPhotoView);
+    }
+
     //@TargetApi(11)
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup parent,
@@ -88,6 +102,20 @@ public class CrimeFragment extends Fragment {
         }
 
         mPhotoView = (ImageView) v.findViewById(R.id.crime_ImageView);
+        mPhotoView.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                Photo p = mCrime.getOriginPhoto();
+                if (p == null){
+                    return;
+                }
+
+                FragmentManager fm = getActivity().getSupportFragmentManager();
+                String path = p.getFilename();
+                ImageFragment.newInstance(path).show(fm, DIALOG_IMAGE);
+            }
+        });
+
         mTitleField = (EditText) v.findViewById(R.id.crime_title);
 
         mTitleField.setText(mCrime.getTitle());
@@ -184,11 +212,7 @@ public class CrimeFragment extends Fragment {
             mPhotoButton.setEnabled(false);
         }
 
-        //String file = FileOpt.getFile(LOCATION,"Crime_"+ mCrime.getId().toString());
-        String file = FileOpt.getFile(THUMBNAIL,"Crime_thumbnail_" + mCrime.getId().toString());
-        if(file != null) {
-            showPhoto(file);
-        }
+        showPhoto();
 
         return v;
     }
@@ -219,12 +243,15 @@ public class CrimeFragment extends Fragment {
         } else  if(requestCode == TAKE_PHOTO){
             corpPhoto(photoUri);
         } else  if(requestCode == CROP_PHOTO){
+            String suffix = mCrime.getId().toString();
+            String location = Environment.getExternalStorageDirectory() + "/Crime/thumbnail";
             Bitmap bitmap = data.getParcelableExtra("data");
-            String id = mCrime.getId().toString();
-            FileOpt.saveFile(bitmap, THUMBNAIL,"Crime_thumbnail_" + id );
-            String thumbnail = FileOpt.getFile(THUMBNAIL,"Crime_thumbnail_" + id);
+            FileOpt.saveFile(bitmap, location,"Crime_thumbnail_" + suffix );
+            String thumbnail = FileOpt.getFile(location,"Crime_thumbnail_" + suffix);
             if(thumbnail != null){
-                showPhoto(thumbnail);
+                Photo p = new Photo(thumbnail);
+                mCrime.setCropPhoto(p);
+                showPhoto();
             }
             //mPhotoView.setImageBitmap(bitmap);
         }
@@ -270,14 +297,21 @@ public class CrimeFragment extends Fragment {
     private void getCamera(){
         Intent intent = new Intent();
         intent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
-        String s = mCrime.getId().toString();
+        String suffix = mCrime.getId().toString();
+        String location = Environment.getExternalStorageDirectory() + "/Crime/";
         //default storage format is jpg
-        File outputImage = FileOpt.createEmptyFile(getActivity(), LOCATION,"Crime_" + s);
+        File outputImage = FileOpt.createEmptyFile(getActivity(), location,"Crime_" + suffix);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             photoUri = FileProvider.getUriForFile(getActivity(),
                     "com.dyr.app.criminalintent" ,outputImage );
         } else {
             photoUri = Uri.fromFile(outputImage);
+        }
+
+        String origin = FileOpt.getFile(location,"Crime_" + suffix);
+        if(origin != null){
+            Photo p = new Photo(origin);
+            mCrime.setOriginPhoto(p);
         }
 
         intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
@@ -302,10 +336,20 @@ public class CrimeFragment extends Fragment {
         }
         startActivityForResult(intent, CROP_PHOTO);
     }
-
+/*
     private void showPhoto(String path){
         BitmapDrawable b = null;
         if(path != null){
+            b = PictureUtils.getScaleDrawable(getActivity(), path);
+        }
+        mPhotoView.setImageDrawable(b);
+    }*/
+
+    private void showPhoto(){
+        Photo p = mCrime.getCropPhoto();
+        BitmapDrawable b = null;
+        if(p != null){
+            String path = p.getFilename();
             b = PictureUtils.getScaleDrawable(getActivity(), path);
         }
         mPhotoView.setImageDrawable(b);
