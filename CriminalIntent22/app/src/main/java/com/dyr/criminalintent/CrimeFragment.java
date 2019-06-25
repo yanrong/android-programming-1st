@@ -1,8 +1,8 @@
-package com.dyr.app.criminalintent;
-
+package com.dyr.criminalintent;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -39,12 +39,24 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.dyr.app.criminalintent.R;
+
 import java.io.File;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 public class CrimeFragment extends Fragment {
+    public static final String EXTRA_CRIME_ID = "com.dyr.app.criminalintent.crime_id";
+    private static final String TAG = "CriminalFragment";
+    private static final String DIALOG_DATE = "date";
+    private static final String DIALOG_TIME = "time";
+    private static final String DIALOG_IMAGE = "image";
+    private static final int REQUEST_DATE = 0;
+    private static final int REQUEST_TIME = 1;
+    private static final int TAKE_PHOTO = 2;
+    private static final int CROP_PHOTO = 3;
+	private static final int REQUEST_CONTACT = 4;
     private Crime mCrime;
     private EditText mTitleField;
     private Button mDateButton;
@@ -53,18 +65,17 @@ public class CrimeFragment extends Fragment {
     private ImageButton mPhotoButton;
     private ImageView mPhotoView;
     private Uri photoUri;
-    private Button mSuspectButton;
+	private Button mSuspectButton;
+    private Callbacks mCallbacks;
 
-    private static final String TAG = "CriminalFragment";
-    public static final String EXTRA_CRIME_ID = "com.dyr.app.criminalintent.crime_id";
-    private static final String DIALOG_DATE = "date";
-    private static final String DIALOG_TIME = "time";
-    private static final String DIALOG_IMAGE = "image";
-    private static final int REQUEST_DATE = 0;
-    private static final int REQUEST_TIME = 1;
-    private static final int TAKE_PHOTO = 2;
-    private static final int CROP_PHOTO = 3;
-    private static final int REQUEST_CONTACT = 4;
+    public static CrimeFragment newInstance(UUID crimeId) {
+        Bundle args = new Bundle();
+        args.putSerializable(EXTRA_CRIME_ID, crimeId);
+
+        CrimeFragment fragment = new CrimeFragment();
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -75,21 +86,33 @@ public class CrimeFragment extends Fragment {
     }
 
     @Override
-    public void onResume(){
+    public void onResume() {
         super.onResume();
         CrimeLab.get(getActivity()).saveCrimes();
     }
 
     @Override
-    public void onStart(){
+    public void onStart() {
         super.onStart();
         showPhoto();
     }
 
     @Override
-    public void onStop(){
+    public void onStop() {
         super.onStop();
         PictureUtils.cleanImageView(mPhotoView);
+    }
+
+    @Override
+    public void onAttach(Context context){
+        super.onAttach(context);
+        mCallbacks = (Callbacks) context;
+    }
+
+    @Override
+    public void onDetach(){
+        super.onDetach();
+        mCallbacks = null;
     }
 
     @Override
@@ -99,19 +122,18 @@ public class CrimeFragment extends Fragment {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             if (NavUtils.getParentActivityName(getActivity()) != null) {
-                ((AppCompatActivity)getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                ((AppCompatActivity) getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             }
         }
 
         mPhotoView = (ImageView) v.findViewById(R.id.crime_ImageView);
         mPhotoView.setOnClickListener(new View.OnClickListener(){
             @Override
-            public void onClick(View v){
+            public void onClick(View v) {
                 Photo p = mCrime.getOriginPhoto();
-                if (p == null){
+                if (p == null) {
                     return;
                 }
-
                 FragmentManager fm = getActivity().getSupportFragmentManager();
                 String path = p.getFilename();
                 ImageFragment.newInstance(path).show(fm, DIALOG_IMAGE);
@@ -125,6 +147,8 @@ public class CrimeFragment extends Fragment {
             public void onTextChanged(CharSequence c, int start, int before,
                                       int count) {
                 mCrime.setTitle(c.toString());
+                mCallbacks.onUpdateCrime(mCrime);
+                getActivity().setTitle(mCrime.getTitle());
             }
 
             public void beforeTextChanged(CharSequence c, int start, int count,
@@ -168,18 +192,19 @@ public class CrimeFragment extends Fragment {
                     @Override
                     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                         mCrime.setSolved(isChecked);
+                        mCallbacks.onUpdateCrime(mCrime);
                     }
                 });
 
         mPhotoButton = (ImageButton)v.findViewById(R.id.crime_imageButton);
         mPhotoButton.setOnClickListener(new View.OnClickListener(){
             @Override
-            public void onClick(View v){
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            public void onClick(View v) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     int checkCameraPermission = ContextCompat.checkSelfPermission(
                             getActivity(), Manifest.permission.CAMERA);
                     int checkStoragePermission = ContextCompat.checkSelfPermission(
-                           getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE
                     );
 
                     if ((checkCameraPermission != PackageManager.PERMISSION_GRANTED) &&
@@ -191,7 +216,6 @@ public class CrimeFragment extends Fragment {
                                         Manifest.permission.WRITE_EXTERNAL_STORAGE
                                 }
                                 , TAKE_PHOTO);
-
                     } else {
                         try {
                             //open camera
@@ -240,9 +264,8 @@ public class CrimeFragment extends Fragment {
         boolean hasCamera = pmanger.hasSystemFeature(PackageManager.FEATURE_CAMERA) ||
                 pmanger.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT) ||
                 Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD ||
-                Camera.getNumberOfCameras() > 0 ;
-
-        if(!hasCamera){
+                Camera.getNumberOfCameras() > 0;
+        if (!hasCamera) {
             mPhotoButton.setEnabled(false);
         }
         showPhoto();
@@ -253,15 +276,6 @@ public class CrimeFragment extends Fragment {
         return v;
     }
 
-    public static CrimeFragment newInstance(UUID crimeId) {
-        Bundle args = new Bundle();
-        args.putSerializable(EXTRA_CRIME_ID, crimeId);
-
-        CrimeFragment fragment = new CrimeFragment();
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode != Activity.RESULT_OK)
@@ -270,23 +284,27 @@ public class CrimeFragment extends Fragment {
             Date date = (Date) data
                     .getSerializableExtra(DatePickerFragment.EXTRA_DATE);
             mCrime.setDate(date);
+            mCallbacks.onUpdateCrime(mCrime);
             updateDateAndTime();
         } else if (requestCode == REQUEST_TIME) {
             Date date = (Date) data
                     .getSerializableExtra(TimePickerFragment.EXTRA_TIME);
             mCrime.setDate(date);
+            mCallbacks.onUpdateCrime(mCrime);
+            mCallbacks.onUpdateCrime(mCrime);
             updateDateAndTime();
-        } else  if(requestCode == TAKE_PHOTO){
+        } else if (requestCode == TAKE_PHOTO) {
             corpPhoto(photoUri);
-        } else  if(requestCode == CROP_PHOTO){
+        } else if (requestCode == CROP_PHOTO) {
             String suffix = mCrime.getId().toString();
             String location = Environment.getExternalStorageDirectory() + "/Crime/thumbnail";
             Bitmap bitmap = data.getParcelableExtra("data");
-            FileOpt.saveFile(bitmap, location,"Crime_thumbnail_" + suffix );
-            String thumbnail = FileOpt.getFile(location,"Crime_thumbnail_" + suffix);
-            if(thumbnail != null){
+            FileOpt.saveFile(bitmap, location, "Crime_thumbnail_" + suffix);
+            String thumbnail = FileOpt.getFile(location, "Crime_thumbnail_" + suffix);
+            if (thumbnail != null) {
                 Photo p = new Photo(thumbnail);
                 mCrime.setCropPhoto(p);
+                mCallbacks.onUpdateCrime(mCrime);
                 showPhoto();
             }
         }else if(requestCode == REQUEST_CONTACT){
@@ -306,6 +324,7 @@ public class CrimeFragment extends Fragment {
             c.moveToFirst();
             String suspect = c.getString(0);
             mCrime.setSuspect(suspect);
+            mCallbacks.onUpdateCrime(mCrime);
             mSuspectButton.setText(suspect);
             c.close();
         }
@@ -325,7 +344,7 @@ public class CrimeFragment extends Fragment {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,String[] permissions,
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
                                            int[] grantResults) {
         if (requestCode == TAKE_PHOTO) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -348,22 +367,22 @@ public class CrimeFragment extends Fragment {
         mTimeButton.setText(t);
     }
 
-    private void getCamera(){
+    private void getCamera() {
         Intent intent = new Intent();
         intent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
         String suffix = mCrime.getId().toString();
         String location = Environment.getExternalStorageDirectory() + "/Crime/";
         //default storage format is jpg
-        File outputImage = FileOpt.createEmptyFile(getActivity(), location,"Crime_" + suffix);
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        File outputImage = FileOpt.createEmptyFile(getActivity(), location, "Crime_" + suffix);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             photoUri = FileProvider.getUriForFile(getActivity(),
-                    "com.dyr.app.criminalintent" ,outputImage );
+                    "com.dyr.app.criminalintent", outputImage);
         } else {
             photoUri = Uri.fromFile(outputImage);
         }
 
-        String origin = FileOpt.getFile(location,"Crime_" + suffix);
-        if(origin != null){
+        String origin = FileOpt.getFile(location, "Crime_" + suffix);
+        if (origin != null) {
             Photo p = new Photo(origin);
             mCrime.setOriginPhoto(p);
         }
@@ -385,23 +404,27 @@ public class CrimeFragment extends Fragment {
         intent.putExtra("outputY", 50);
 
         intent.putExtra("return-data", true);
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         }
         startActivityForResult(intent, CROP_PHOTO);
     }
 
-    private void showPhoto(){
+    private void showPhoto() {
         Photo p = mCrime.getCropPhoto();
         BitmapDrawable b = null;
-        if(p != null){
+        if (p != null) {
             String path = p.getFilename();
             b = PictureUtils.getScaleDrawable(getActivity(), path);
         }
         mPhotoView.setImageDrawable(b);
     }
 
-    private String getCrimeReport(){
+    public interface Callbacks{
+        void onUpdateCrime(Crime c);
+    }
+
+	private String getCrimeReport(){
         String solvedString = null;
         if(mCrime.isSolved()){
             solvedString = getString(R.string.crime_report_solved);
