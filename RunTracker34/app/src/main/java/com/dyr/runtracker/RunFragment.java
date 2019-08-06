@@ -20,12 +20,23 @@ public class RunFragment extends Fragment {
     private RunManager mRunManger;
     private Location mLastLocation;
     private Run mRun;
+    private static final String ARG_RUN_ID = "RUN_ID";
 
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         mRunManger = RunManager.get(getActivity());
+
+        //Check for a Run Id as a argument, and find the run
+        Bundle args = new Bundle();
+        if(args != null){
+            long runId = args.getLong(ARG_RUN_ID, -1);
+            if(runId != -1){
+                mRun = mRunManger.getRun(runId);
+                mLastLocation = mRunManger.getLastLocationForRun(runId);
+            }
+        }
     }
 
     @Override
@@ -44,7 +55,11 @@ public class RunFragment extends Fragment {
         mStartButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                mRun = mRunManger.startNewRun();
+                if(mRun == null){
+                    mRun = mRunManger.startNewRun();
+                }else {
+                    mRunManger.startTrackingRun(mRun);
+                }
                 updateUI();
             }
         });
@@ -71,20 +86,29 @@ public class RunFragment extends Fragment {
     }
 
     private BroadcastReceiver mLocationReceiver = new LocationReceiver(){
-
         @Override
         protected  void onLocationReceived(Context context, Location loc){
+            if(!mRunManger.isTrackingRun()){
+                return;
+            }
             mLastLocation = loc;
             if(isVisible()){
                 updateUI();
             }
         }
-
         protected void onProviderEnableChanged(boolean enable){
             int toastText = enable ? R.string.gps_enabled : R.string.gps_disabled;
             Toast.makeText(getActivity(), toastText, Toast.LENGTH_LONG);
         }
     };
+
+    public static RunFragment newInstance(long runId){
+        Bundle args = new Bundle();
+        args.putLong(ARG_RUN_ID, runId);
+        RunFragment rf = new RunFragment();
+        rf.setArguments(args);
+        return rf;
+    }
 
     private void updateUI(){
         boolean started = mRunManger.isTrackingRun();

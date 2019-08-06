@@ -120,6 +120,18 @@ public class RunManager {
         return run;
     }
 
+    public Run getRun(long id){
+        Run run = null;
+        RunDatabaseHelper.RunCursor cursor = mHelper.queryRuns(id);
+        cursor.moveToFirst();
+        //If you got a row, get a return
+        if(!cursor.isAfterLast()){
+            run = cursor.getRun();
+        }
+        cursor.close();
+        return run;
+    }
+
     public RunDatabaseHelper.RunCursor queryRuns(){
         return mHelper.queryRuns();
     }
@@ -130,5 +142,17 @@ public class RunManager {
         }else{
             Log.e(TAG, "location received with to tracking run, ignoring");
         }
+    }
+
+    public Location getLastLocationForRun(long runId){
+        Location location = null;
+        RunDatabaseHelper.LocationCursor cursor = mHelper.queryLastLocationForRun(runId);
+        cursor.moveToFirst();
+        //If you got a row,get a location
+        if(!cursor.isAfterLast()){
+            location = cursor.getLocation();
+        }
+        cursor.close();
+        return location;
     }
 }
